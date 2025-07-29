@@ -183,3 +183,95 @@
 2025-07-26 08:12:09,549 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
 2025-07-26 08:12:09,550 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
 2025-07-26 08:12:09,551 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 19:44:44,597 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-29 19:44:44,613 - INFO - Loaded blockchain for project 2 from blockchain_data\blockchain_2.json with 3 blocks
+2025-07-29 19:44:44,613 - INFO - Loaded blockchain for project 3 from blockchain_data\blockchain_3.json with 1 blocks
+2025-07-29 19:44:45,012 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-29 19:44:45,012 - INFO - Loaded blockchain for project 2 from blockchain_data\blockchain_2.json with 3 blocks
+2025-07-29 19:44:45,012 - INFO - Loaded blockchain for project 3 from blockchain_data\blockchain_3.json with 1 blocks
+2025-07-29 19:45:30,241 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 19:45:30,244 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
+2025-07-29 19:45:30,244 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-29 19:45:30,244 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 19:45:48,241 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
+2025-07-29 19:45:48,242 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-29 19:45:48,242 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 19:46:50,435 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
+2025-07-29 19:46:50,435 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-29 19:46:50,436 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:22:13,276 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-29 21:22:13,276 - INFO - Loaded blockchain for project 2 from blockchain_data\blockchain_2.json with 3 blocks
+2025-07-29 21:22:13,276 - INFO - Loaded blockchain for project 3 from blockchain_data\blockchain_3.json with 1 blocks
+2025-07-29 21:22:14,670 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-29 21:22:14,673 - INFO - Loaded blockchain for project 2 from blockchain_data\blockchain_2.json with 3 blocks
+2025-07-29 21:22:14,676 - INFO - Loaded blockchain for project 3 from blockchain_data\blockchain_3.json with 1 blocks
+2025-07-29 21:22:26,628 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:22:26,636 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
+2025-07-29 21:22:26,636 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-29 21:22:26,636 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:23:38,749 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-29 21:23:38,749 - INFO - Loaded blockchain for project 2 from blockchain_data\blockchain_2.json with 3 blocks
+2025-07-29 21:23:38,749 - INFO - Loaded blockchain for project 3 from blockchain_data\blockchain_3.json with 1 blocks
+2025-07-29 21:23:39,002 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-29 21:23:39,002 - INFO - Loaded blockchain for project 2 from blockchain_data\blockchain_2.json with 3 blocks
+2025-07-29 21:23:39,002 - INFO - Loaded blockchain for project 3 from blockchain_data\blockchain_3.json with 1 blocks
+2025-07-29 21:23:45,023 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:23:45,028 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
+2025-07-29 21:23:45,028 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-29 21:23:45,029 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:23:47,551 - INFO - Deleted blockchain file blockchain_data\blockchain_1.json for project 1
+2025-07-29 21:23:47,564 - INFO - Updated project 2 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-29 21:23:47,564 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:23:49,534 - INFO - Deleted blockchain file blockchain_data\blockchain_2.json for project 2
+2025-07-29 21:23:49,551 - INFO - Updated project 3 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:23:51,305 - INFO - Deleted blockchain file blockchain_data\blockchain_3.json for project 3
+2025-07-29 21:34:13,708 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:35:20,571 - INFO - Created new blockchain for project 1
+2025-07-29 21:35:20,571 - INFO - Initialized blockchain for new project 1
+2025-07-29 21:41:34,557 - INFO - Deleted blockchain file blockchain_data\blockchain_1.json for project 1
+2025-07-29 21:42:20,498 - INFO - Created new blockchain for project 1
+2025-07-29 21:42:20,499 - INFO - Initialized blockchain for new project 1
+2025-07-29 21:43:45,769 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:44:12,750 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:45:40,236 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:46:05,664 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:46:44,613 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:46:59,356 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:48:47,486 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:48:48,860 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:49:02,202 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:49:02,202 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:51:13,106 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:53:04,945 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:53:06,336 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:53:55,947 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:53:55,961 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:54:12,596 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:55:34,215 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:55:38,956 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:55:38,962 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:55:42,738 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:55:44,726 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:57:42,876 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:57:44,214 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 21:58:10,055 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 21:58:10,073 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 21:58:27,005 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-29 22:00:42,260 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 22:00:49,028 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 22:37:01,012 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 22:37:02,447 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks
+2025-07-29 22:37:52,575 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 22:40:19,697 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 22:42:29,831 - INFO - Loaded wallet for kiet from Wallet\kiet_wallet.json
+2025-07-29 23:31:25,465 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 23:31:27,876 - INFO - Deleted blockchain file blockchain_data\blockchain_1.json for project 1
+2025-07-29 23:34:16,576 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 23:34:39,976 - INFO - Created new blockchain for project 1
+2025-07-29 23:34:39,977 - INFO - Initialized blockchain for new project 1
+2025-07-29 23:35:19,476 - INFO - Loaded wallet for kiet from Wallet\kiet_wallet.json
+2025-07-29 23:35:34,009 - INFO - Updated project 1 progress to 100.0% (Total tasks: 1, Completed: 1)
+2025-07-29 23:35:39,510 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 23:35:58,568 - INFO - Loaded wallet for thien from Wallet\thien_wallet.json
+2025-07-29 23:36:34,611 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json
+2025-07-29 23:36:36,331 - INFO - Loaded wallet for admin from Wallet\admin_wallet.json

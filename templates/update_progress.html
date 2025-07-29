@@ -14,12 +14,12 @@
         Task: {{ task.title }}
       </h2>
       <p class="mb-2">
-        Task Deadline: {{ task.deadline.strftime('%Y-%m-%d %H:%M') if
-        task.deadline else 'N/A' }}
+        Task Deadline: {{ task.end_datetime.strftime('%Y-%m-%d %H:%M') if
+        task.end_datetime else 'N/A' }}
       </p>
       <p class="mb-4">
-        Project Deadline: {{ task.project_deadline.strftime('%Y-%m-%d %H:%M') if
-        task.project_deadline else 'N/A' }}
+        Project Deadline: {{ task.project_end_datetime.strftime('%Y-%m-%d
+        %H:%M') if task.project_end_datetime else 'N/A' }}
       </p>
 
       {% with messages = get_flashed_messages() %} {% if messages %}
@@ -41,6 +41,13 @@
 
       <form method="POST" enctype="multipart/form-data" class="space-y-4">
         <div>
+          <label class="flex items-center text-sm font-medium text-blue-700">
+            <input type="checkbox" name="completed" class="mr-2 h-4 w-4
+            text-blue-600 focus:ring-blue-500 border-gray-300 rounded" {% if
+            task.progress == 100 %}checked{% endif %} /> Task Completed
+          </label>
+        </div>
+        <div>
           <label class="block text-sm font-medium text-blue-700"
             >Progress Description</label
           >
@@ -53,6 +60,22 @@
           >
           <p class="text-sm text-gray-600 mt-1">
             Changes will be saved and visible to admin on the blockchain.
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Upload Files (Optional)</label
+          >
+          <input
+            type="file"
+            name="files"
+            multiple
+            accept="image/*,.pdf,.doc,.docx"
+            class="mt-1 block w-full p-2 border border-blue-300 rounded-md"
+          />
+          <p class="text-sm text-gray-600 mt-1">
+            Upload images, PDFs, or Word documents for payment/cost
+            verification.
           </p>
         </div>
         <button

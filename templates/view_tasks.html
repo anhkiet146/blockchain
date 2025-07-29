@@ -39,7 +39,9 @@
         {% for phase in phases %}
         <div class="mb-6">
           <h2 class="text-lg font-semibold text-blue-700 mb-2">
-            Giai Đoạn: {{ phase.name }} (Deadline: {{ phase.deadline }})
+            Giai Đoạn: {{ phase.name }} (Deadline: {{
+            phase.start_datetime.strftime('%Y-%m-%d %H:%M') }} - {{
+            phase.end_datetime.strftime('%Y-%m-%d %H:%M') }})
           </h2>
           <table class="table-auto w-full">
             <thead>
@@ -59,7 +61,10 @@
               <tr class="border-b hover:bg-gray-50">
                 <td class="p-2 font-medium">{{ task.title }}</td>
                 <td class="p-2">{{ task.description or 'None' }}</td>
-                <td class="p-2">{{ task.deadline }}</td>
+                <td class="p-2">
+                  {{ task.start_datetime.strftime('%Y-%m-%d %H:%M') }} - {{
+                  task.end_datetime.strftime('%Y-%m-%d %H:%M') }}
+                </td>
                 <td class="p-2">
                   <div class="w-full bg-gray-200 rounded-full h-2.5">
                     <div

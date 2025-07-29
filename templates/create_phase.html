@@ -38,17 +38,33 @@
           ></textarea>
         </div>
         <div>
-          <label class="block text-sm font-medium text-blue-700">
-            Deadline (YYYY-MM-DD HH:MM, Max: {{
-            project.deadline.strftime('%Y-%m-%d %H:%M') }})
-          </label>
+          <label class="block text-sm font-medium text-blue-700"
+            >Start Date (YYYY-MM-DD HH:MM, Min: {{
+            project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
           <input
             type="datetime-local"
-            name="deadline"
-            id="phaseDeadline"
-            value="{{ request.form.deadline or '' }}"
-            max="{{ project.deadline.strftime('%Y-%m-%dT%H:%M') }}"
-            min="{{ now_str }}"
+            name="start_datetime"
+            id="phaseStartDate"
+            value="{{ request.form.start_datetime or project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            min="{{ project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >End Date (YYYY-MM-DD HH:MM, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
+          <input
+            type="datetime-local"
+            name="end_datetime"
+            id="phaseEndDate"
+            value="{{ request.form.end_datetime or project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
             class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
             required
           />
@@ -73,16 +89,26 @@
     </div>
     <script>
       const phaseForm = document.getElementById("phaseForm");
-      const phaseDeadline = document.getElementById("phaseDeadline");
-      const projectDeadline =
-        "{{ project.deadline.strftime('%Y-%m-%dT%H:%M') }}";
+      const phaseStartDate = document.getElementById("phaseStartDate");
+      const phaseEndDate = document.getElementById("phaseEndDate");
 
-      // Kiểm tra deadline của phase so với deadline của project
+      // Kiểm tra ngày của phase
       phaseForm.addEventListener("submit", (event) => {
-        const phaseDeadlineValue = phaseDeadline.value;
-        if (phaseDeadlineValue > projectDeadline) {
+        const projectStart =
+          "{{ project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+        const projectEnd =
+          "{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+        const phaseStart = phaseStartDate.value;
+        const phaseEnd = phaseEndDate.value;
+        if (phaseStart < projectStart) {
           event.preventDefault();
-          alert("Phase deadline cannot exceed the deadline of the project.");
+          alert(
+            "Phase start date must be equal to or after project start date."
+          );
+        }
+        if (phaseEnd > projectEnd) {
+          event.preventDefault();
+          alert("Phase end date cannot exceed project end date.");
         }
       });
     </script>

@@ -38,17 +38,32 @@
           ></textarea>
         </div>
         <div>
-          <label class="block text-sm font-medium text-blue-700">
-            Deadline (YYYY-MM-DD HH:MM, Max: {{
-            project.deadline.strftime('%Y-%m-%d %H:%M') }})
-          </label>
+          <label class="block text-sm font-medium text-blue-700"
+            >Start Date (YYYY-MM-DD HH:MM, Min: {{ now_str }}, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
           <input
             type="datetime-local"
-            name="deadline"
-            id="taskDeadline"
-            value="{{ request.form.deadline or '' }}"
-            max="{{ project.deadline.strftime('%Y-%m-%dT%H:%M') }}"
+            name="start_datetime"
+            id="taskStartDate"
+            value="{{ request.form.start_datetime or now_str }}"
             min="{{ now_str }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >End Date (YYYY-MM-DD HH:MM, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
+          <input
+            type="datetime-local"
+            name="end_datetime"
+            id="taskEndDate"
+            value="{{ request.form.end_datetime or now_str }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
             class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
             required
           />
@@ -62,7 +77,11 @@
           >
             <option value="">None</option>
             {% for phase in phases %}
-            <option value="{{ phase.id }}" data-deadline="{{ phase.deadline }}">
+            <option
+              value="{{ phase.id }}"
+              data-start="{{ phase.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+              data-end="{{ phase.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            >
               {{ phase.name }}
             </option>
             {% endfor %}
@@ -84,7 +103,6 @@
                 {% endfor %}
               </option>
             </datalist>
-
             <button
               type="button"
               id="addUser"
@@ -121,7 +139,8 @@
       const selectedUsersDiv = document.getElementById("selectedUsers");
       const userIdsInput = document.getElementById("userIds");
       const taskForm = document.getElementById("taskForm");
-      const taskDeadline = document.getElementById("taskDeadline");
+      const taskStartDate = document.getElementById("taskStartDate");
+      const taskEndDate = document.getElementById("taskEndDate");
       const phaseSelect = document.getElementById("phaseSelect");
       let selectedUsers = [];
 
@@ -152,30 +171,57 @@
         userIdsInput.value = selectedUsers.join(",");
       }
 
-      // Kiểm tra deadline của task so với deadline của phase
+      // Kiểm tra ngày bắt đầu và kết thúc của task so với phase
       taskForm.addEventListener("submit", (event) => {
         const selectedPhase = phaseSelect.options[phaseSelect.selectedIndex];
-        const taskDeadlineValue = taskDeadline.value;
-        if (selectedPhase && selectedPhase.value !== "" && taskDeadlineValue) {
-          const phaseDeadline = selectedPhase.dataset.deadline;
-          if (taskDeadlineValue > phaseDeadline) {
+        const taskStartValue = taskStartDate.value;
+        const taskEndValue = taskEndDate.value;
+        if (
+          selectedPhase &&
+          selectedPhase.value !== "" &&
+          taskStartValue &&
+          taskEndValue
+        ) {
+          const phaseStart = selectedPhase.dataset.start;
+          const phaseEnd = selectedPhase.dataset.end;
+          if (taskStartValue < phaseStart || taskEndValue > phaseEnd) {
             event.preventDefault();
-            alert(
-              "Task deadline cannot exceed the deadline of the selected phase."
-            );
+            alert("Task dates must be within the selected phase dates.");
           }
+        } else if (taskStartValue > taskEndValue) {
+          event.preventDefault();
+          alert("Start date cannot be later than end date.");
         }
       });
 
-      // Cập nhật max của taskDeadline khi chọn phase
+      // Cập nhật min và max của taskStartDate và taskEndDate khi chọn phase
       phaseSelect.addEventListener("change", () => {
         const selectedPhase = phaseSelect.options[phaseSelect.selectedIndex];
         if (selectedPhase && selectedPhase.value !== "") {
-          const phaseDeadline = selectedPhase.dataset.deadline;
-          taskDeadline.max = phaseDeadline;
+          taskStartDate.min = selectedPhase.dataset.start;
+          taskStartDate.max = selectedPhase.dataset.end;
+          taskEndDate.min = selectedPhase.dataset.start;
+          taskEndDate.max = selectedPhase.dataset.end;
         } else {
-          taskDeadline.max =
-            "{{ project.deadline.strftime('%Y-%m-%dT%H:%M') }}";
+          taskStartDate.min = "{{ now_str }}";
+          taskStartDate.max =
+            "{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+          taskEndDate.min = "{{ now_str }}";
+          taskEndDate.max =
+            "{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+        }
+        // Reset values if they fall outside new min/max
+        if (
+          taskStartDate.value < taskStartDate.min ||
+          taskStartDate.value > taskStartDate.max
+        ) {
+          taskStartDate.value = taskStartDate.min;
+        }
+        if (
+          taskEndDate.value < taskEndDate.min ||
+          taskEndDate.value > taskEndDate.max
+        ) {
+          taskEndDate.value = taskEndDate.min;
         }
       });
     </script>

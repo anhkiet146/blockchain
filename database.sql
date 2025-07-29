@@ -11,9 +11,11 @@ CREATE TABLE projects (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
-    deadline DATETIME NOT NULL,
+    start_datetime DATETIME NOT NULL,
+    end_datetime DATETIME NOT NULL,
     status TEXT NOT NULL DEFAULT 'Pending' CHECK(status IN ('Running', 'Pending', 'Done')),
-    progress INTEGER DEFAULT 0
+    progress INTEGER DEFAULT 0,
+    CHECK (start_datetime <= end_datetime)
 );
 
 CREATE TABLE phases (
@@ -21,9 +23,11 @@ CREATE TABLE phases (
     project_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
-    deadline DATETIME NOT NULL,
+    start_datetime DATETIME NOT NULL,
+    end_datetime DATETIME NOT NULL,
     progress INTEGER DEFAULT 0,
-    FOREIGN KEY (project_id) REFERENCES projects(id)
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    CHECK (start_datetime <= end_datetime)
 );
 
 CREATE TABLE phase_dependencies (
@@ -41,11 +45,13 @@ CREATE TABLE tasks (
     phase_id INTEGER,
     title TEXT NOT NULL,
     description TEXT,
+    start_datetime DATETIME NOT NULL,
+    end_datetime DATETIME NOT NULL,
     progress INTEGER DEFAULT 0,
-    deadline DATETIME NOT NULL,
     progress_text TEXT,
     FOREIGN KEY (project_id) REFERENCES projects(id),
-    FOREIGN KEY (phase_id) REFERENCES phases(id)
+    FOREIGN KEY (phase_id) REFERENCES phases(id),
+    CHECK (start_datetime <= end_datetime)
 );
 
 CREATE TABLE task_assignments (
@@ -62,6 +68,16 @@ CREATE TABLE task_progress (
     progress INTEGER DEFAULT 0,
     timestamp TEXT,
     PRIMARY KEY (task_id, user_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE files (
+    id INTEGER PRIMARY KEY,
+    task_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,
+    upload_timestamp DATETIME NOT NULL,
     FOREIGN KEY (task_id) REFERENCES tasks(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

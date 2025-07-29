@@ -12,14 +12,15 @@ import logging
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# Đường dẫn thư mục lưu blockchain
+# Đường dẫn thư mục lưu blockchain và uploads
 BLOCKCHAIN_DIR = "blockchain_data"
-if not os.path.exists(BLOCKCHAIN_DIR):
-    os.makedirs(BLOCKCHAIN_DIR)
+UPLOADS_DIR = "uploads"
+for directory in [BLOCKCHAIN_DIR, UPLOADS_DIR]:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 WALLET_DIR = "Wallet"
 if not os.path.exists(WALLET_DIR):
     os.makedirs(WALLET_DIR)
-
 
 # Tắt logger mặc định của Flask/Werkzeug
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -101,8 +102,9 @@ def update_project_progress(conn, project_id):
     if total_tasks == 0:
         return 0
     completed_tasks = conn.execute('SELECT COUNT(*) FROM tasks WHERE project_id = ? AND progress = 100', (project_id,)).fetchone()[0]
-    progress = (completed_tasks / total_tasks) * 100
-    conn.execute('UPDATE projects SET progress = ? WHERE id = ?', (progress, project_id))
+    progress = round((completed_tasks / total_tasks) * 100, 2)
+    status = 'Done' if progress == 100 else 'Pending' if progress == 0 else 'Running'
+    conn.execute('UPDATE projects SET progress = ?, status = ? WHERE id = ?', (progress, status, project_id))
     conn.commit()
     logger.info(f"Updated project {project_id} progress to {progress}% (Total tasks: {total_tasks}, Completed: {completed_tasks})")
     return progress
@@ -128,7 +130,6 @@ def login():
         if user:
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
             if hashed_password == user['password']:
-                # Load wallet trước khi đăng nhập
                 wallet = load_wallet(username)
                 if wallet:
                     session['user_id'] = user['id']
@@ -146,7 +147,6 @@ def login():
         else:
             flash('User not found!')
 
-    # Load ví mặc định khi GET (nếu cần kiểm tra trước)
     if 'username' in request.args:
         username = request.args['username']
         wallet = load_wallet(username)
@@ -161,40 +161,88 @@ def login():
 def admin_dashboard():
     if 'user_id' not in session or session['role'] != 'admin':
         return redirect(url_for('login'))
+    
     conn = get_db()
-    for project in conn.execute('SELECT id FROM projects').fetchall():
-        update_project_progress(conn, project['id'])
-    projects = conn.execute('SELECT p.*, (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count FROM projects p').fetchall()
-    tasks = conn.execute('''
-        SELECT t.*, GROUP_CONCAT(u.username) as assigned_users
-        FROM tasks t
-        LEFT JOIN task_assignments ta ON t.id = ta.task_id
-        LEFT JOIN users u ON ta.user_id = u.id
-        GROUP BY t.id
-    ''').fetchall()
-    conn.close()
-    running = sum(1 for p in projects if p['progress'] > 0 and p['progress'] < 100)
-    total_progress = sum((p['progress'] if p['progress'] else 0) for p in projects)
-    progress = total_progress / max(1, len(projects)) if projects else 0
-    return render_template('admin_dashboard.html', projects=projects, tasks=[], running=running, progress=progress)
+    projects = conn.execute('SELECT * FROM projects').fetchall()
+    projects = [dict(project) for project in projects]
 
-@app.route('/admin/view_tasks/<int:project_id>')
-def view_tasks(project_id):
+    # Tính tổng nhiệm vụ
+    total_tasks = conn.execute('SELECT COUNT(*) FROM tasks').fetchone()[0]
+
+    # Tính số dự án hoàn thành (progress = 100)
+    completed_projects = conn.execute('SELECT COUNT(*) FROM projects WHERE progress = 100').fetchone()[0]
+
+    # Chuyển đổi datetime và tính time_progress
+    now = datetime.now()
+    for project in projects:
+        if isinstance(project['start_datetime'], str):
+            project['start_datetime'] = datetime.strptime(project['start_datetime'], '%Y-%m-%d %H:%M:%S')
+        if isinstance(project['end_datetime'], str):
+            project['end_datetime'] = datetime.strptime(project['end_datetime'], '%Y-%m-%d %H:%M:%S')
+        if 'deadline' not in project:
+            project['deadline'] = project['end_datetime'].strftime('%Y-%m-%d %H:%M')
+        
+        # Tính time_progress
+        total_duration = (project['end_datetime'] - project['start_datetime']).total_seconds()
+        elapsed_duration = (now - project['start_datetime']).total_seconds()
+        time_progress = (elapsed_duration / total_duration * 100) if total_duration > 0 else 0
+        time_progress = round(min(max(time_progress, 0), 100), 2)
+        project['time_progress'] = time_progress
+
+    # Tính running và progress
+    running = sum(1 for project in projects if 0 < project.get('progress', 0) < 100)
+    progress = sum(project.get('progress', 0) for project in projects) / max(len(projects), 1) if projects else 0
+
+    conn.close()
+    return render_template('admin_dashboard.html', projects=projects, tasks=[], running=running, progress=progress, total_tasks=total_tasks, completed_projects=completed_projects)
+
+@app.route('/admin/view_task/<int:project_id>')
+def view_task(project_id):
     if 'user_id' not in session or session['role'] != 'admin':
         return redirect(url_for('login'))
+    
     conn = get_db()
     project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
-    tasks = conn.execute('''
-        SELECT t.*, GROUP_CONCAT(u.username) as assigned_users
-        FROM tasks t
-        LEFT JOIN task_assignments ta ON t.id = ta.task_id
-        LEFT JOIN users u ON ta.user_id = u.id
-        WHERE t.project_id = ?
+    if not project:
+        flash('Project not found.')
+        conn.close()
+        return redirect(url_for('admin_dashboard'))
+
+    project = dict(project)
+    if isinstance(project['start_datetime'], str):
+        project['start_datetime'] = datetime.strptime(project['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    if isinstance(project['end_datetime'], str):
+        project['end_datetime'] = datetime.strptime(project['end_datetime'], '%Y-%m-%d %H:%M:%S')
+
+    phases_raw = conn.execute('SELECT id, name, start_datetime, end_datetime FROM phases WHERE project_id = ?', (project_id,)).fetchall()
+    phases = []
+    for phase in phases_raw:
+        phase_dict = dict(phase)
+        if isinstance(phase_dict['start_datetime'], str):
+            phase_dict['start_datetime'] = datetime.strptime(phase_dict['start_datetime'], '%Y-%m-%d %H:%M:%S')
+        if isinstance(phase_dict['end_datetime'], str):
+            phase_dict['end_datetime'] = datetime.strptime(phase_dict['end_datetime'], '%Y-%m-%d %H:%M:%S')
+        phases.append(phase_dict)
+
+    tasks_raw = conn.execute('''
+        SELECT t.*, GROUP_CONCAT(u.username) as assigned_users 
+        FROM tasks t 
+        LEFT JOIN task_assignments ta ON t.id = ta.task_id 
+        LEFT JOIN users u ON ta.user_id = u.id 
+        WHERE t.project_id = ? 
         GROUP BY t.id
     ''', (project_id,)).fetchall()
-    phases = conn.execute('SELECT * FROM phases WHERE project_id = ? ORDER BY deadline', (project_id,)).fetchall()
+    tasks = []
+    for task in tasks_raw:
+        task_dict = dict(task)
+        if isinstance(task_dict['start_datetime'], str):
+            task_dict['start_datetime'] = datetime.strptime(task_dict['start_datetime'], '%Y-%m-%d %H:%M:%S')
+        if isinstance(task_dict['end_datetime'], str):
+            task_dict['end_datetime'] = datetime.strptime(task_dict['end_datetime'], '%Y-%m-%d %H:%M:%S')
+        tasks.append(task_dict)
+
     conn.close()
-    return render_template('view_tasks.html', project=project, tasks=tasks, phases=phases)
+    return render_template('view_tasks.html', project=project, phases=phases, tasks=tasks)
 
 @app.route('/admin/delete_project/<int:project_id>', methods=['POST'])
 def delete_project(project_id):
@@ -211,7 +259,7 @@ def delete_project(project_id):
         blockchain_file = os.path.join(BLOCKCHAIN_DIR, f"blockchain_{project_id}.json")
         if os.path.exists(blockchain_file):
             os.remove(blockchain_file)
-            print(f"Deleted blockchain file {blockchain_file} for project {project_id}")
+            logger.info(f"Deleted blockchain file {blockchain_file} for project {project_id}")
     conn.commit()
     conn.close()
     flash('Project and related data deleted successfully')
@@ -233,54 +281,54 @@ def create_project():
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        deadline = request.form['deadline']
+        start_datetime = request.form['start_datetime']
+        end_datetime = request.form['end_datetime']
         try:
-            deadline_datetime = datetime.fromisoformat(deadline.replace('T', ' '))
+            start_datetime_dt = datetime.fromisoformat(start_datetime.replace('T', ' '))
+            end_datetime_dt = datetime.fromisoformat(end_datetime.replace('T', ' '))
+            if start_datetime_dt > end_datetime_dt:
+                flash('Start date cannot be later than end date.')
+                return render_template('create_project.html')
             conn = get_db()
-            conn.execute('INSERT INTO projects (name, description, deadline, progress) VALUES (?, ?, ?, 0)', 
-                        (name, description, deadline_datetime))
+            conn.execute('INSERT INTO projects (name, description, start_datetime, end_datetime, progress) VALUES (?, ?, ?, ?, 0)', 
+                        (name, description, start_datetime_dt, end_datetime_dt))
             project_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
-            # Tạo blockchain mới và lưu file
             blockchain = get_or_create_blockchain(project_id)
             blockchain.save_to_file(os.path.join(BLOCKCHAIN_DIR, f"blockchain_{project_id}.json"))
-            print(f"Initialized blockchain for new project {project_id}")
-            # Xử lý các giai đoạn từ form
+            logger.info(f"Initialized blockchain for new project {project_id}")
             phase_names = request.form.getlist('phase_names[]')
             phase_descriptions = request.form.getlist('phase_descriptions[]')
-            phase_deadlines = request.form.getlist('phase_deadlines[]')
+            phase_start_datetimes = request.form.getlist('phase_start_datetimes[]')
+            phase_end_datetimes = request.form.getlist('phase_end_datetimes[]')
             
-            # Kiểm tra và sắp xếp giai đoạn
             phases = []
-            for name, desc, dl in zip(phase_names, phase_descriptions, phase_deadlines):
-                if name and dl:
-                    phase_deadline = datetime.fromisoformat(dl.replace('T', ' '))
-                    if phase_deadline > deadline_datetime:
-                        flash('Phase deadline cannot exceed project deadline.')
+            for name, desc, start_dt, end_dt in zip(phase_names, phase_descriptions, phase_start_datetimes, phase_end_datetimes):
+                if name and start_dt and end_dt:
+                    phase_start_dt = datetime.fromisoformat(start_dt.replace('T', ' '))
+                    phase_end_dt = datetime.fromisoformat(end_dt.replace('T', ' '))
+                    if phase_start_dt > phase_end_dt or phase_end_dt > end_datetime_dt:
+                        flash('Phase start date cannot be later than end date or exceed project end date.')
                         conn.close()
                         return render_template('create_project.html')
-                    phases.append({'name': name, 'description': desc or None, 'deadline': phase_deadline})
+                    phases.append({'name': name, 'description': desc or None, 'start_datetime': phase_start_dt, 'end_datetime': phase_end_dt})
             
-            # Sắp xếp theo deadline tăng dần
-            phases.sort(key=lambda x: x['deadline'])
-            
-            # Kiểm tra ngày bắt đầu (dựa trên deadline của phase trước)
+            phases.sort(key=lambda x: x['start_datetime'])
             for i in range(1, len(phases)):
-                if phases[i]['deadline'] <= phases[i-1]['deadline']:
-                    flash('Each phase must have a deadline after the previous phase.')
+                if phases[i]['start_datetime'] <= phases[i-1]['end_datetime']:
+                    flash('Each phase must start after the previous phase ends.')
                     conn.close()
                     return render_template('create_project.html')
             
-            # Thêm các giai đoạn vào cơ sở dữ liệu
             for phase in phases:
-                conn.execute('INSERT INTO phases (project_id, name, description, deadline) VALUES (?, ?, ?, ?)',
-                            (project_id, phase['name'], phase['description'], phase['deadline']))
+                conn.execute('INSERT INTO phases (project_id, name, description, start_datetime, end_datetime) VALUES (?, ?, ?, ?, ?)',
+                            (project_id, phase['name'], phase['description'], phase['start_datetime'], phase['end_datetime']))
             
             conn.commit()
             conn.close()
             flash('Project and phases created successfully')
             return redirect(url_for('admin_dashboard'))
         except ValueError:
-            flash('Invalid deadline format. Use YYYY-MM-DD HH:MM.')
+            flash('Invalid date format. Use YYYY-MM-DD HH:MM.')
             return render_template('create_project.html')
     return render_template('create_project.html')
 
@@ -290,7 +338,7 @@ def view_phases(project_id):
         return redirect(url_for('login'))
     conn = get_db()
     project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
-    phases = conn.execute('SELECT * FROM phases WHERE project_id = ? ORDER BY deadline', (project_id,)).fetchall()
+    phases = conn.execute('SELECT * FROM phases WHERE project_id = ? ORDER BY end_datetime', (project_id,)).fetchall()
     conn.close()
     return render_template('view_phases.html', project_id=project_id, project=project, phases=phases)
 
@@ -302,59 +350,58 @@ def create_task(project_id):
     conn = get_db()
     project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
     users = conn.execute('SELECT * FROM users WHERE role = "user"').fetchall()
-    # Truy vấn phases và định dạng deadline
-    phases_raw = conn.execute('SELECT id, name, deadline FROM phases WHERE project_id = ?', (project_id,)).fetchall()
-    phases = []
-    for phase in phases_raw:
-        phase_dict = dict(phase)
-        if isinstance(phase_dict['deadline'], str):
-            # Chuyển đổi deadline từ chuỗi sang datetime và định dạng lại
-            phase_dict['deadline'] = datetime.strptime(phase_dict['deadline'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M')
-        else:
-            phase_dict['deadline'] = phase_dict['deadline'].strftime('%Y-%m-%dT%H:%M')
-        phases.append(phase_dict)
+    phases_raw = conn.execute('SELECT id, name, start_datetime, end_datetime FROM phases WHERE project_id = ?', (project_id,)).fetchall()
     now_str = datetime.now().strftime('%Y-%m-%dT%H:%M')
     if not project:
         flash('Project not found.')
         conn.close()
         return redirect(url_for('admin_dashboard'))
 
-    try:
-        project = dict(project)
-        project['deadline'] = datetime.strptime(project['deadline'], '%Y-%m-%d %H:%M:%S')
-    except Exception:
-        flash('Invalid project deadline format.')
-        conn.close()
-        return redirect(url_for('admin_dashboard'))
+    project = dict(project)
+    if isinstance(project['start_datetime'], str):
+        project['start_datetime'] = datetime.strptime(project['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    if isinstance(project['end_datetime'], str):
+        project['end_datetime'] = datetime.strptime(project['end_datetime'], '%Y-%m-%d %H:%M:%S')
+
+    phases = []
+    for phase in phases_raw:
+        phase_dict = dict(phase)
+        if isinstance(phase_dict['start_datetime'], str):
+            phase_dict['start_datetime'] = datetime.strptime(phase_dict['start_datetime'], '%Y-%m-%d %H:%M:%S')
+        if isinstance(phase_dict['end_datetime'], str):
+            phase_dict['end_datetime'] = datetime.strptime(phase_dict['end_datetime'], '%Y-%m-%d %H:%M:%S')
+        phases.append(phase_dict)
 
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
-        deadline = request.form['deadline']
+        start_datetime = request.form['start_datetime']
+        end_datetime = request.form['end_datetime']
         user_ids = request.form.getlist('user_ids')
         phase_id = request.form.get('phase_id')
 
         try:
-            task_deadline = datetime.fromisoformat(deadline.replace('T', ' '))
-            if task_deadline > project['deadline']:
-                flash('Task deadline cannot be later than project deadline.')
+            task_start_dt = datetime.fromisoformat(start_datetime.replace('T', ' '))
+            task_end_dt = datetime.fromisoformat(end_datetime.replace('T', ' '))
+            if task_start_dt > task_end_dt or task_end_dt > project['end_datetime']:
+                flash('Task start date cannot be later than end date or exceed project end date.')
                 conn.close()
                 return render_template('create_task.html', project_id=project_id, users=users, project=project, phases=phases, now_str=now_str)
             
-            # Kiểm tra deadline của task so với deadline của phase
             if phase_id:
-                phase = conn.execute('SELECT deadline FROM phases WHERE id = ?', (phase_id,)).fetchone()
+                phase = conn.execute('SELECT start_datetime, end_datetime FROM phases WHERE id = ?', (phase_id,)).fetchone()
                 if phase:
-                    phase_deadline = datetime.strptime(phase['deadline'], '%Y-%m-%d %H:%M:%S')
-                    if task_deadline > phase_deadline:
-                        flash('Task deadline cannot exceed the deadline of the selected phase.')
+                    phase_start = datetime.strptime(phase['start_datetime'], '%Y-%m-%d %H:%M:%S') if isinstance(phase['start_datetime'], str) else phase['start_datetime']
+                    phase_end = datetime.strptime(phase['end_datetime'], '%Y-%m-%d %H:%M:%S') if isinstance(phase['end_datetime'], str) else phase['end_datetime']
+                    if task_start_dt < phase_start or task_end_dt > phase_end:
+                        flash('Task dates must be within the selected phase dates.')
                         conn.close()
                         return render_template('create_task.html', project_id=project_id, users=users, project=project, phases=phases, now_str=now_str)
 
             conn.execute('''
-                INSERT INTO tasks (project_id, phase_id, title, description, progress, deadline, progress_text) 
-                VALUES (?, ?, ?, ?, 0, ?, NULL)
-            ''', (project_id, phase_id, title, description, task_deadline))
+                INSERT INTO tasks (project_id, phase_id, title, description, start_datetime, end_datetime, progress, progress_text) 
+                VALUES (?, ?, ?, ?, ?, ?, 0, NULL)
+            ''', (project_id, phase_id, title, description, task_start_dt, task_end_dt))
 
             task_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
 
@@ -367,7 +414,7 @@ def create_task(project_id):
             flash('Task created and assigned successfully')
             return redirect(url_for('admin_dashboard'))
         except ValueError:
-            flash('Invalid deadline format. Use YYYY-MM-DD HH:MM.')
+            flash('Invalid date format. Use YYYY-MM-DD HH:MM.')
             conn.close()
             return render_template('create_task.html', project_id=project_id, users=users, project=project, phases=phases, now_str=now_str)
 
@@ -378,39 +425,42 @@ def create_task(project_id):
 def assign_task(task_id):
     if 'user_id' not in session or session['role'] != 'admin':
         return redirect(url_for('login'))
+    
     conn = get_db()
-    users = conn.execute('SELECT * FROM users WHERE role = "user"').fetchall()
     task = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
-    project = conn.execute('SELECT * FROM projects WHERE id = ?', (task['project_id'],)).fetchone()
-    if request.method == 'POST':
-        user_ids = request.form.getlist('user_ids')
-        deadline = request.form['deadline']
-        try:
-            task_deadline = datetime.fromisoformat(deadline.replace('T', ' '))
-            project_deadline = datetime.strptime(str(project['deadline']), '%Y-%m-%d %H:%M:%S')
-            if task_deadline > project_deadline:
-                flash('Task deadline cannot be later than project deadline.')
-                conn.close()
-                return render_template('assign_task.html', task_id=task_id, users=users, task=task, project=project)
-            # Kiểm tra deadline so với phase nếu có
-            if task['phase_id']:
-                phase = conn.execute('SELECT deadline FROM phases WHERE id = ?', (task['phase_id'],)).fetchone()
-                if phase and task_deadline > datetime.strptime(phase['deadline'], '%Y-%m-%d %H:%M:%S'):
-                    flash('Task deadline cannot exceed the deadline of the selected phase.')
-                    conn.close()
-                    return render_template('assign_task.html', task_id=task_id, users=users, task=task, project=project)
-        except ValueError:
-            flash('Invalid deadline format. Use YYYY-MM-DD HH:MM.')
-            conn.close()
-            return render_template('assign_task.html', task_id=task_id, users=users, task=task, project=project)
-        conn.execute('UPDATE tasks SET deadline = ? WHERE id = ?', (task_deadline, task_id))
-        conn.execute('DELETE FROM task_assignments WHERE task_id = ?', (task_id,))
-        for user_id in user_ids:
-            conn.execute('INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)', 
-                        (task_id, user_id))
-        conn.commit()
+    if not task:
+        flash('Task not found.')
         conn.close()
         return redirect(url_for('admin_dashboard'))
+
+    task = dict(task)
+    if isinstance(task['start_datetime'], str):
+        task['start_datetime'] = datetime.strptime(task['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    if isinstance(task['end_datetime'], str):
+        task['end_datetime'] = datetime.strptime(task['end_datetime'], '%Y-%m-%d %H:%M:%S')
+
+    users = conn.execute('SELECT * FROM users WHERE role = "user"').fetchall()
+    current_assignments = conn.execute('SELECT user_id FROM task_assignments WHERE task_id = ?', (task_id,)).fetchall()
+    current_user_ids = [row['user_id'] for row in current_assignments]
+
+    if request.method == 'POST':
+        user_ids = request.form.getlist('user_ids')
+        try:
+            conn.execute('DELETE FROM task_assignments WHERE task_id = ?', (task_id,))
+            for user_id in user_ids:
+                conn.execute('INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)', (task_id, user_id))
+            conn.commit()
+            flash('Task assigned successfully.')
+            conn.close()
+            return redirect(url_for('view_task', project_id=task['project_id']))
+        except Exception as e:
+            conn.rollback()
+            flash(f'Error assigning task: {str(e)}')
+            conn.close()
+            return render_template('assign_task.html', task=task, users=users, project_id=task['project_id'], current_user_ids=current_user_ids)
+
+    conn.close()
+    return render_template('assign_task.html', task=task, users=users, project_id=task['project_id'], current_user_ids=current_user_ids)
 
 @app.route('/admin/view_chain')
 def view_chain():
@@ -426,7 +476,6 @@ def view_project_chain(project_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # Load wallet khi xem blockchain
     username = session['username']
     wallet = load_wallet(username)
     if not wallet:
@@ -449,7 +498,6 @@ def view_project_chain(project_id):
                         conn.execute('UPDATE tasks SET progress_text = ? WHERE id = ?', (old_content, tx.task_id))
                         conn.commit()
                         flash(f'Reset block {block_index} to old content for task {tx.task_id}')
-                        # Xóa block cũ và tái tạo blockchain
                         blockchain.chain = [block for i, block in enumerate(blockchain.chain) if i != block_index]
                         blockchain.mine_pending_transactions()
                         blockchain_file = os.path.join(BLOCKCHAIN_DIR, f"blockchain_{project_id}.json")
@@ -460,7 +508,6 @@ def view_project_chain(project_id):
     if not relevant_chain:
         flash('No blockchain data available for this project.')
     
-    # Kiểm tra có chỉnh sửa không cho từng block
     has_edits = any(block.is_edited for block in relevant_chain)
     annotated_chain = [
         {
@@ -477,7 +524,7 @@ def user_dashboard():
         return redirect(url_for('login'))
     conn = get_db()
     cursor = conn.execute('''
-        SELECT DISTINCT p.id, p.name, p.deadline, p.progress
+        SELECT DISTINCT p.id, p.name, p.start_datetime, p.end_datetime, p.progress
         FROM projects p
         JOIN tasks t ON p.id = t.project_id
         JOIN task_assignments ta ON t.id = ta.task_id
@@ -488,7 +535,7 @@ def user_dashboard():
     user_tasks = {}
     for project in projects:
         tasks = conn.execute('''
-            SELECT t.*, p.deadline as project_deadline
+            SELECT t.*, p.end_datetime AS project_end_datetime
             FROM tasks t
             JOIN task_assignments ta ON t.id = ta.task_id
             JOIN projects p ON t.project_id = p.id
@@ -496,7 +543,6 @@ def user_dashboard():
         ''', (session['user_id'], project['id'])).fetchall()
         user_tasks[project['id']] = tasks
     
-    print(f"User ID: {session['user_id']}, Projects: {projects}, Tasks: {user_tasks}")
     conn.close()
     return render_template('user_dashboard.html', projects=projects, user_tasks=user_tasks)
 
@@ -507,16 +553,27 @@ def update_progress(task_id):
     
     conn = get_db()
     task = dict(conn.execute('''
-        SELECT t.*, p.deadline AS project_deadline, p.id AS project_id 
+        SELECT t.*, p.end_datetime AS project_end_datetime, p.id AS project_id, 
+               GROUP_CONCAT(u.username) AS assigned_users
         FROM tasks t 
         JOIN projects p ON t.project_id = p.id 
+        LEFT JOIN task_assignments ta ON t.id = ta.task_id
+        LEFT JOIN users u ON ta.user_id = u.id
         WHERE t.id = ?
+        GROUP BY t.id
     ''', (task_id,)).fetchone())
     
-    if isinstance(task['deadline'], str):
-        task['deadline'] = datetime.strptime(task['deadline'], '%Y-%m-%d %H:%M:%S')
-    if isinstance(task['project_deadline'], str):
-        task['project_deadline'] = datetime.strptime(task['project_deadline'], '%Y-%m-%d %H:%M:%S')
+    if not task:
+        flash('Task not found.')
+        conn.close()
+        return redirect(url_for('user_dashboard'))
+    
+    if isinstance(task['start_datetime'], str):
+        task['start_datetime'] = datetime.strptime(task['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    if isinstance(task['end_datetime'], str):
+        task['end_datetime'] = datetime.strptime(task['end_datetime'], '%Y-%m-%d %H:%M:%S')
+    if isinstance(task['project_end_datetime'], str):
+        task['project_end_datetime'] = datetime.strptime(task['project_end_datetime'], '%Y-%m-%d %H:%M:%S')
     
     phase = conn.execute('SELECT * FROM phases WHERE id = ? AND progress < 100', (task.get('phase_id'),)).fetchone()
     if phase:
@@ -529,12 +586,26 @@ def update_progress(task_id):
                 return render_template('update_progress.html', task=task)
 
     if request.method == 'POST':
-        progress_text = request.form['progress_text']
-        old_progress_text = task.get('progress_text', '')
+        completed = request.form.get('completed') == 'on'
+        progress_text = request.form['progress_text'] or ''
+        progress = 100 if completed else 0
 
-        progress = 100 if any(keyword in progress_text.lower() for keyword in ["hoàn thành", "completed", "done"]) else 0
+        # Handle file uploads
+        files = request.files.getlist('files')
+        uploaded_files = []
+        for file in files:
+            if file and file.filename:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"task_{task_id}_user_{session['user_id']}_{timestamp}_{file.filename}"
+                file_path = os.path.join(UPLOADS_DIR, filename)
+                file.save(file_path)
+                uploaded_files.append(file_path)
+                conn.execute('''
+                    INSERT INTO files (task_id, user_id, file_path, upload_timestamp)
+                    VALUES (?, ?, ?, ?)
+                ''', (task_id, session['user_id'], file_path, datetime.now()))
+                logger.info(f"Uploaded file {filename} for task {task_id} by user {session['user_id']}")
 
-        # Tạo giao dịch và ký
         private_key = session['wallet_private_key']
         transaction = Transaction(
             session['wallet_public_key'],
@@ -549,7 +620,6 @@ def update_progress(task_id):
         transaction.sign_transaction(private_key)
 
         blockchain = get_or_create_blockchain(task['project_id'])
-        # Thử cập nhật giao dịch hiện có
         if blockchain.update_transaction_in_chain(task['project_id'], task_id, progress_text, private_key):
             blockchain_file = os.path.join(BLOCKCHAIN_DIR, f"blockchain_{task['project_id']}.json")
             if os.path.exists(blockchain_file):
@@ -561,11 +631,10 @@ def update_progress(task_id):
                         conn.execute('UPDATE phases SET progress = 100 WHERE id = ?', (task['phase_id'],))
                 update_project_progress(conn, task['project_id'])
                 conn.commit()
-                flash('Thông tin người dùng đã được lưu lại.')
+                flash('Thông tin tiến độ đã được lưu lại.')
             else:
                 flash('Cannot save block: Blockchain file not found.')
         else:
-            # Nếu không tìm thấy, thêm giao dịch mới và mine block
             if blockchain.add_transaction(transaction):
                 success = blockchain.mine_pending_transactions()
                 if success:
@@ -579,7 +648,7 @@ def update_progress(task_id):
                                 conn.execute('UPDATE phases SET progress = 100 WHERE id = ?', (task['phase_id'],))
                         update_project_progress(conn, task['project_id'])
                         conn.commit()
-                        flash('Thông tin người dùng đã được lưu lại.')
+                        flash('Thông tin tiến độ đã được lưu lại.')
                     else:
                         flash('Cannot save block: Blockchain file not found.')
                 else:
@@ -587,6 +656,9 @@ def update_progress(task_id):
                     flash('Failed to mine block')
             else:
                 flash('Invalid transaction signature!')
+
+        conn.close()
+        return redirect(url_for('user_dashboard'))
 
     conn.close()
     return render_template('update_progress.html', task=task)
@@ -623,7 +695,7 @@ def admin_notifications():
 def create_phase(project_id):
     if 'user_id' not in session or session['role'] != 'admin':
         return redirect(url_for('login'))
-
+    
     conn = get_db()
     project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
     if not project:
@@ -631,56 +703,45 @@ def create_phase(project_id):
         conn.close()
         return redirect(url_for('admin_dashboard'))
 
-    try:
-        project = dict(project)
-        project['deadline'] = datetime.strptime(project['deadline'], '%Y-%m-%d %H:%M:%S')
-    except Exception:
-        flash('Invalid project deadline format.')
-        conn.close()
-        return redirect(url_for('admin_dashboard'))
+    project = dict(project)
+    if isinstance(project['start_datetime'], str):
+        project['start_datetime'] = datetime.strptime(project['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    if isinstance(project['end_datetime'], str):
+        project['end_datetime'] = datetime.strptime(project['end_datetime'], '%Y-%m-%d %H:%M:%S')
 
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        deadline = request.form['deadline']
+        start_datetime = request.form['start_datetime']
+        end_datetime = request.form['end_datetime']
 
         try:
-            phase_deadline = datetime.fromisoformat(deadline.replace('T', ' '))
-            if phase_deadline > project['deadline']:
-                flash('Phase deadline cannot be later than project deadline.')
-                phases = conn.execute('SELECT * FROM phases WHERE project_id = ?', (project_id,)).fetchall()
-                phases = [dict(phase) for phase in phases]
-                for phase in phases:
-                    if isinstance(phase['deadline'], str):
-                        phase['deadline'] = datetime.strptime(phase['deadline'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M')
+            phase_start_dt = datetime.fromisoformat(start_datetime.replace('T', ' '))
+            phase_end_dt = datetime.fromisoformat(end_datetime.replace('T', ' '))
+            if phase_start_dt < project['start_datetime'] or phase_end_dt > project['end_datetime']:
+                flash('Phase dates must be within project start and end dates.')
                 conn.close()
-                return render_template('create_phase.html', project_id=project_id, project=project, phases=phases, now_str=datetime.now().strftime('%Y-%m-%dT%H:%M'))
+                return render_template('create_phase.html', project_id=project_id, project=project, phases=[])
+            if phase_start_dt >= phase_end_dt:
+                flash('Phase start date cannot be later than or equal to end date.')
+                conn.close()
+                return render_template('create_phase.html', project_id=project_id, project=project, phases=[])
 
             conn.execute('''
-                INSERT INTO phases (project_id, name, description, deadline)
-                VALUES (?, ?, ?, ?)
-            ''', (project_id, name, description, phase_deadline))
+                INSERT INTO phases (project_id, name, description, start_datetime, end_datetime)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (project_id, name, description, phase_start_dt, phase_end_dt))
             conn.commit()
+            conn.close()
             flash('Phase created successfully')
-            conn.close()
-            return redirect(url_for('admin_dashboard'))
+            return redirect(url_for('view_task', project_id=project_id))
         except ValueError:
-            flash('Invalid deadline format. Use YYYY-MM-DD HH:MM.')
-            phases = conn.execute('SELECT * FROM phases WHERE project_id = ?', (project_id,)).fetchall()
-            phases = [dict(phase) for phase in phases]
-            for phase in phases:
-                if isinstance(phase['deadline'], str):
-                    phase['deadline'] = datetime.strptime(phase['deadline'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M')
+            flash('Invalid date format. Use YYYY-MM-DD HH:MM.')
             conn.close()
-            return render_template('create_phase.html', project_id=project_id, project=project, phases=phases, now_str=datetime.now().strftime('%Y-%m-%dT%H:%M'))
+            return render_template('create_phase.html', project_id=project_id, project=project, phases=[])
 
-    phases = conn.execute('SELECT * FROM phases WHERE project_id = ?', (project_id,)).fetchall()
-    phases = [dict(phase) for phase in phases]
-    for phase in phases:
-        if isinstance(phase['deadline'], str):
-            phase['deadline'] = datetime.strptime(phase['deadline'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M')
     conn.close()
-    return render_template('create_phase.html', project_id=project_id, project=project, phases=phases, now_str=datetime.now().strftime('%Y-%m-%dT%H:%M'))
+    return render_template('create_phase.html', project_id=project_id, project=project, phases=[])
 
 @app.route('/logout')
 def logout():
