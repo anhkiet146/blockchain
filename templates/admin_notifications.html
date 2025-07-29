@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin Notifications</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h1 class="text-2xl font-bold mb-6 text-gray-800">Admin Notifications</h1>
+      {% with messages = get_flashed_messages() %} {% if messages %} {% for
+      message in messages %}
+      <div class="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
+        {{ message }}
+      </div>
+      {% endfor %} {% endif %} {% endwith %} {% if notifications %}
+      <div class="space-y-4">
+        {% for notif in notifications %}
+        <div class="p-4 bg-gray-50 rounded-lg shadow">
+          <p><strong>Project:</strong> {{ notif.project_name }}</p>
+          <p><strong>Edited by:</strong> {{ notif.username }}</p>
+          <p><strong>Task ID:</strong> {{ notif.task_id }}</p>
+          <p><strong>Progress:</strong> {{ notif.progress_text }}</p>
+          <p><strong>Time:</strong> {{ notif.timestamp }}</p>
+          {% if notif.is_edited %}
+          <p class="text-red-600"><strong>Edited Block</strong></p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-gray-600">No notifications available.</p>
+      {% endif %}
+      <a
+        href="{{ url_for('admin_dashboard') }}"
+        class="mt-6 inline-block bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
+        >Back to Dashboard</a
+      >
+    </div>
+  </body>
+</html>

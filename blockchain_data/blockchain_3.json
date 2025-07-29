@@ -1,0 +1,15 @@
+{
+  "chain": [
+    {
+      "index": 0,
+      "timestamp": "Fri Jul 25 23:15:17 2025",
+      "transactions": [],
+      "prev_hash": "0",
+      "nonce": 15,
+      "difficulty": 2,
+      "hash": "004274c6b8477574b61076447753f6c1b0c39d9c1f9d62e8674a6af426467bf4",
+      "is_edited": false
+    }
+  ],
+  "chain_hash": "341ac8835f108982fa57d99e25b6b8a2875c9746a7547e1aac02b70e9cf9080e"
+}

@@ -1,0 +1,29 @@
+2025-07-25 19:58:04,957 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-25 19:58:06,461 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-25 19:58:26,078 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-25 19:58:27,490 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 3 blocks
+2025-07-25 19:58:39,135 - INFO - Updated project 1 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-25 20:09:51,624 - INFO - Updated project 1 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-25 20:09:54,982 - INFO - 
+2025-07-25 20:09:54,986 - INFO - 
+2025-07-25 20:09:57,320 - INFO - Updated project 1 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-25 21:02:03,313 - INFO - Updated project 1 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-25 21:05:34,400 - INFO - Updated project 1 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-25 21:15:57,234 - INFO - Updated project 1 progress to 100.0% (Total tasks: 2, Completed: 2)
+2025-07-25 21:22:24,509 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-25 21:22:47,180 - INFO - Updated project 1 progress to 0.0% (Total tasks: 2, Completed: 0)
+2025-07-25 21:22:51,588 - INFO - Updated project 1 progress to 0.0% (Total tasks: 2, Completed: 0)
+2025-07-25 21:22:55,027 - INFO - Updated project 1 progress to 0.0% (Total tasks: 2, Completed: 0)
+2025-07-25 21:33:44,646 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-25 21:43:35,216 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-25 21:43:39,476 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-25 21:44:03,454 - INFO - Created new blockchain for project 1
+2025-07-25 21:44:16,891 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-25 21:44:21,044 - INFO - Updated project 1 progress to 0.0% (Total tasks: 1, Completed: 0)
+2025-07-25 22:04:14,723 - INFO - Raw wallet data (bytes): b'{\r\n    "private_key": "E37UE5hdiAxrTwydon66J06ZJZDa8jLuuo3mhwmIgLw=",\r\n    "public_key": "BCv6GvDButjHP8P+fvYvdalW+kb00RL67IOuI6puOU0OeBTKxjXjqGPP+9zXoSrC9Ttpti66C1GKaAwiFkbjbQ=="\r\n}'
+2025-07-25 22:04:14,745 - INFO - Parsed wallet data: {'private_key': 'E37UE5hdiAxrTwydon66J06ZJZDa8jLuuo3mhwmIgLw=', 'public_key': 'BCv6GvDButjHP8P+fvYvdalW+kb00RL67IOuI6puOU0OeBTKxjXjqGPP+9zXoSrC9Ttpti66C1GKaAwiFkbjbQ=='}
+2025-07-25 22:04:14,752 - INFO - Raw file_private_key: E37UE5hdiAxrTwydon66J06ZJZDa8jLuuo3mhwmIgLw=
+2025-07-25 22:04:14,752 - INFO - Decoded file_private_key_bytes: 137ed413985d880c6b4f0c9da27eba274e992590daf232eeba8de687098880bc, length: 32
+2025-07-25 22:04:14,774 - ERROR - Error processing wallet file: Invalid length of private key, received 48, expected 32
+2025-07-25 22:09:25,926 - ERROR - Error processing transaction: Invalid length of private key, received 48, expected 32
+2025-07-25 22:09:55,464 - INFO - Loaded blockchain for project 1 from blockchain_data\blockchain_1.json with 1 blocks

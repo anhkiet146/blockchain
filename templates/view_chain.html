@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Projects</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <header
+      class="bg-white shadow p-4 flex justify-between items-center w-full z-10"
+    >
+      <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+      <div>
+        {% if session.get('user_id') %}
+        <span class="mr-4 font-semibold"
+          >Xin Chào, {{ session['username'] }}</span
+        >
+        <a
+          href="{{ url_for('logout') }}"
+          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          >Đăng Xuất</a
+        >
+        {% else %}
+        <a
+          href="{{ url_for('login') }}"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >Đăng Nhập</a
+        >
+        {% endif %}
+      </div>
+      <button
+        id="sidebarToggleMobile"
+        class="text-gray-600 focus:outline-none md:hidden"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+    </header>
+    <div class="flex min-h-screen">
+      <!-- Sidebar -->
+      <div
+        id="sidebar"
+        class="sidebar bg-white shadow-lg h-screen fixed md:relative z-20 w-64"
+      >
+        <div class="p-4 flex items-center justify-between border-b">
+          <h2 class="text-2xl font-semibold text-gray-800">Menu</h2>
+          <button
+            id="sidebarToggle"
+            class="text-gray-600 focus:outline-none md:hidden"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
+        <nav class="mt-6">
+          <a
+            href="{{ url_for('admin_dashboard') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">Dashboard</span>
+          </a>
+          <a
+            href="{{ url_for('admin_users') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Users</span>
+          </a>
+          <a
+            href="{{ url_for('view_chain') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Blockchain</span>
+          </a>
+          <a
+            href="{{ url_for('admin_notifications') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">Notifications</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col ml-0 overflow-auto">
+        <header
+          class="bg-white shadow p-4 flex justify-between items-center md:hidden"
+        >
+          <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+          <button
+            id="sidebarToggleMobile"
+            class="text-gray-600 focus:outline-none"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </header>
+
+        <main class="overflow-x-auto overflow-y-auto bg-gray-100 p-6">
+          <div class="max-w-full mx-auto">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">
+              Danh Sách Dự Án
+            </h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {% for project in projects %}
+              <a
+                href="{{ url_for('view_project_chain', project_id=project.id) }}"
+                class="block p-4 bg-white shadow rounded-lg hover:bg-gray-50 transition duration-200"
+              >
+                <h2 class="text-xl font-semibold text-gray-800">
+                  {{ project.name }}
+                </h2>
+                <p class="text-gray-600">Deadline: {{ project.deadline }}</p>
+                <p class="text-gray-600">
+                  Progress: {{ project.progress|default(0) }}%
+                </p>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Sidebar Toggle JS -->
+    <script>
+      const sidebar = document.getElementById("sidebar");
+      const sidebarToggle = document.getElementById("sidebarToggle");
+      const sidebarToggleMobile = document.getElementById(
+        "sidebarToggleMobile"
+      );
+
+      const toggleSidebar = () => {
+        sidebar.classList.toggle("hidden");
+      };
+
+      if (sidebarToggle) sidebarToggle.addEventListener("click", toggleSidebar);
+      if (sidebarToggleMobile)
+        sidebarToggleMobile.addEventListener("click", toggleSidebar);
+    </script>
+  </body>
+</html>
