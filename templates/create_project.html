@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Create Project</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-6">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h1 class="text-2xl font-bold mb-6 text-gray-800">Create Project</h1>
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div
+        class="flash bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4"
+      >
+        {{ messages[0] }}
+      </div>
+      {% endif %} {% endwith %}
+      <form method="POST" class="space-y-4" id="projectForm">
+        <div>
+          <label class="block text-sm font-medium text-blue-700">Name</label>
+          <input
+            type="text"
+            name="name"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Description</label
+          >
+          <textarea
+            name="description"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Start Date (YYYY-MM-DD HH:MM)</label
+          >
+          <input
+            type="datetime-local"
+            name="start_datetime"
+            id="projectStartDate"
+            value="2025-07-29T21:38"
+            min="2025-07-29T21:38"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >End Date (YYYY-MM-DD HH:MM)</label
+          >
+          <input
+            type="datetime-local"
+            name="end_datetime"
+            id="projectEndDate"
+            value="2025-07-29T21:38"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+
+        <div class="border border-blue-300 rounded-lg p-4 bg-white shadow-md">
+          <div id="phases-container">
+            <h2 class="text-lg font-semibold text-blue-700 mt-4">Phases</h2>
+            <div class="phase-input space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-blue-700"
+                  >Phase Name</label
+                >
+                <input
+                  type="text"
+                  name="phase_names[]"
+                  class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-blue-700"
+                  >Phase Description</label
+                >
+                <textarea
+                  name="phase_descriptions[]"
+                  class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+                ></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-blue-700"
+                  >Phase Start Date (YYYY-MM-DD HH:MM)</label
+                >
+                <input
+                  type="datetime-local"
+                  name="phase_start_datetimes[]"
+                  id="phaseStartDateFirst"
+                  value="2025-07-29T21:38"
+                  class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-blue-700"
+                  >Phase End Date (YYYY-MM-DD HH:MM)</label
+                >
+                <input
+                  type="datetime-local"
+                  name="phase_end_datetimes[]"
+                  id="phaseEndDateFirst"
+                  value="2025-07-29T21:38"
+                  class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+                  required
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              id="add-phase"
+              class="mt-2 bg-green-500 text-white font-semibold py-1 px-2 rounded hover:bg-green-600 transition"
+            >
+              Add Another Phase
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition"
+        >
+          Create Project
+        </button>
+      </form>
+      <button
+        class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded hover:bg-gray-700 transition mt-4"
+      >
+        <a
+          href="{{ url_for('admin_dashboard') }}"
+          class="block text-white text-center"
+        >
+          Back
+        </a>
+      </button>
+    </div>
+
+    <script>
+      const projectForm = document.getElementById("projectForm");
+      const projectStartDate = document.getElementById("projectStartDate");
+      const projectEndDate = document.getElementById("projectEndDate");
+      const phaseStartDateFirst = document.getElementById(
+        "phaseStartDateFirst"
+      );
+      const phaseEndDateFirst = document.getElementById("phaseEndDateFirst");
+
+      // Kiểm tra ngày của phase đầu tiên
+      projectForm.addEventListener("submit", (event) => {
+        const projectStart = projectStartDate.value;
+        const projectEnd = projectEndDate.value;
+        const phaseStart = phaseStartDateFirst.value;
+        const phaseEnd = phaseEndDateFirst.value;
+        if (phaseStart < projectStart) {
+          event.preventDefault();
+          alert(
+            "Phase start date must be equal to or after project start date."
+          );
+        }
+        if (phaseEnd > projectEnd) {
+          event.preventDefault();
+          alert("Phase end date cannot exceed project end date.");
+        }
+      });
+
+      document
+        .getElementById("add-phase")
+        .addEventListener("click", function () {
+          const container = document.getElementById("phases-container");
+          const phaseInput = document
+            .querySelector(".phase-input")
+            .cloneNode(true);
+          // Reset input values
+          phaseInput.querySelectorAll("input, textarea").forEach((input) => {
+            input.value = "";
+          });
+          // Đặt min cho start date mới dựa trên end date của phase trước đó
+          const lastEndDateInputs = container.querySelectorAll(
+            'input[name="phase_end_datetimes[]"]'
+          );
+          if (lastEndDateInputs.length > 0) {
+            const lastEndDate =
+              lastEndDateInputs[lastEndDateInputs.length - 1].value;
+            phaseInput.querySelector(
+              'input[name="phase_start_datetimes[]"]'
+            ).min = new Date(new Date(lastEndDate).getTime() + 1)
+              .toISOString()
+              .slice(0, 16);
+          } else {
+            phaseInput.querySelector(
+              'input[name="phase_start_datetimes[]"]'
+            ).min = projectStartDate.value;
+          }
+          phaseInput.querySelector(
+            'input[name="phase_start_datetimes[]"]'
+          ).value = phaseInput.querySelector(
+            'input[name="phase_start_datetimes[]"]'
+          ).min;
+          phaseInput.querySelector('input[name="phase_end_datetimes[]"]').min =
+            phaseInput.querySelector(
+              'input[name="phase_start_datetimes[]"]'
+            ).value;
+          phaseInput.querySelector('input[name="phase_end_datetimes[]"]').max =
+            projectEndDate.value;
+          phaseInput.querySelector(
+            'input[name="phase_end_datetimes[]"]'
+          ).value = phaseInput.querySelector(
+            'input[name="phase_end_datetimes[]"]'
+          ).min;
+          // Thêm đường ngang
+          const hr = document.createElement("hr");
+          hr.className = "my-4 border-gray-300";
+          container.insertBefore(hr, this);
+          container.insertBefore(phaseInput, this);
+        });
+    </script>
+  </body>
+</html>

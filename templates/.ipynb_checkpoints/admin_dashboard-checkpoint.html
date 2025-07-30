@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header
+      class="bg-white shadow p-4 flex justify-between items-center w-full z-10"
+    >
+      <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+      <div>
+        {% if session.get('user_id') %}
+        <span class="mr-4 font-semibold"
+          >Xin Chào, {{ session['username'] }}</span
+        >
+        <a
+          href="{{ url_for('logout') }}"
+          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          >Đăng Xuất</a
+        >
+        {% else %}
+        <a
+          href="{{ url_for('login') }}"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >Đăng Nhập</a
+        >
+        {% endif %}
+      </div>
+      <button
+        id="sidebarToggleMobile"
+        class="text-gray-600 focus:outline-none md:hidden"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+    </header>
+
+    <!-- Sidebar and Main Content -->
+    <div class="flex flex-row">
+      <!-- Sidebar -->
+      <div
+        id="sidebar"
+        class="sidebar bg-white shadow-lg h-screen fixed md:relative z-20 w-64 transform transition-transform -translate-x-full md:translate-x-0"
+      >
+        <div class="p-4 flex items-center justify-between border-b">
+          <h2 class="text-2xl font-semibold text-gray-800">Menu</h2>
+          <button
+            id="sidebarToggle"
+            class="text-gray-600 focus:outline-none md:hidden"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <nav class="mt-6">
+          <a
+            href="{{ url_for('admin_dashboard') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">Dashboard</span>
+          </a>
+          <a
+            href="{{ url_for('admin_users') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Users</span>
+          </a>
+          <a
+            href="{{ url_for('view_chain') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Blockchain</span>
+          </a>
+            <a
+            href="{{ url_for('view_charts') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Charts</span>
+          </a>
+          <a
+            href="{{ url_for('admin_notifications') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">Notifications</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="flex-1 flex flex-col ml-0 overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+          <div class="md:col-span-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="bg-white shadow rounded-xl p-4">
+                <h2 class="text-lg font-semibold">Tổng Dự Án</h2>
+                <p class="text-4xl font-bold">{{ projects|length }}</p>
+              </div>
+              <div class="bg-white shadow rounded-xl p-4">
+                <h2 class="text-lg font-semibold">Tổng Nhiệm Vụ</h2>
+                <p class="text-4xl font-bold">{{ total_tasks }}</p>
+              </div>
+              <div class="bg-white shadow rounded-xl p-4">
+                <h2 class="text-lg font-semibold">Dự Án Hoàn Thành</h2>
+                <p class="text-4xl font-bold">{{ completed_projects }}</p>
+              </div>
+            </div>
+
+            <div class="bg-white shadow rounded-xl">
+              <div class="p-4 border-b text-xl font-semibold">
+                Danh Sách Dự Án
+              </div>
+              <div class="overflow-x-auto p-4">
+                <table class="table-auto w-full">
+                  <thead>
+                    <tr class="bg-gray-100 text-left">
+                      <th class="p-2">Tên Dự Án</th>
+                      <th class="p-2">Tiến Độ</th>
+                      <th class="p-2">Thời Gian</th>
+                      <th class="p-2">Deadline</th>
+                      <th class="p-2">Trạng Thái</th>
+                      <th class="p-2">Hành Động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for project in projects %} {% set task_count =
+                    project.task_count|default(0) %} {% set project_progress =
+                    project.progress|default(0) %} {% set status = 'Done' if
+                    project_progress == 100 else 'Pending' if project_progress
+                    == 0 else 'Running' %}
+                    <tr class="border-b hover:bg-gray-50">
+                      <td class="p-2 font-medium">{{ project.name }}</td>
+                      <td class="p-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            class="bg-blue-600 h-2.5 rounded-full"
+                            style="width: {{ project_progress }}%"
+                          ></div>
+                        </div>
+                        <span class="text-sm text-gray-600"
+                          >{{ project_progress }}%</span
+                        >
+                      </td>
+                      <td class="p-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            class="bg-green-600 h-2.5 rounded-full"
+                            style="width: {{ project.time_progress }}%"
+                          ></div>
+                        </div>
+                        <span class="text-sm text-gray-600"
+                          >{{ project.time_progress }}%</span
+                        >
+                      </td>
+                      <td class="p-2">{{ project.deadline }}</td>
+                      <td class="p-2">
+                        {% set status_color = { 'Done': 'bg-green-500',
+                        'Running': 'bg-orange-500', 'Pending': 'bg-gray-400'
+                        }.get(status, 'bg-gray-300') %}
+                        <span
+                          class="text-white text-sm px-2 py-1 rounded {{ status_color }}"
+                          >{{ status }}</span
+                        >
+                      </td>
+                      <td class="p-2 space-x-2">
+                        <a
+                          href="{{ url_for('view_task', project_id=project.id) }}"
+                          class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                          >Xem Giai Đoạn</a
+                        >
+                        <a
+                          href="{{ url_for('create_phase', project_id=project.id) }}"
+                          class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                          >Thêm Giai Đoạn</a
+                        >
+                        <a
+                          href="{{ url_for('create_task', project_id=project.id) }}"
+                          class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                          >Add Task</a
+                        >
+                        <form
+                          method="POST"
+                          action="{{ url_for('delete_project', project_id=project.id) }}"
+                          class="inline"
+                          onsubmit="return confirm('Bạn có chắc muốn xóa dự án này?');"
+                        >
+                          <button
+                            type="submit"
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Xóa
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="text-right mt-4">
+              <a
+                href="{{ url_for('create_project') }}"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >Tạo Dự Án Mới</a
+              >
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- JS toggle sidebar -->
+    <script>
+      const sidebar = document.getElementById("sidebar");
+      const sidebarToggle = document.getElementById("sidebarToggle");
+      const sidebarToggleMobile = document.getElementById(
+        "sidebarToggleMobile"
+      );
+
+      const toggleSidebar = () => {
+        sidebar.classList.toggle("-translate-x-full");
+        sidebar.classList.toggle("translate-x-0");
+      };
+
+      if (sidebarToggle) sidebarToggle.addEventListener("click", toggleSidebar);
+      if (sidebarToggleMobile)
+        sidebarToggleMobile.addEventListener("click", toggleSidebar);
+    </script>
+  </body>
+</html>

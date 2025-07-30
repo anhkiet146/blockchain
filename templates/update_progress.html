@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Update Progress</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-6">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800">
+        Task: {{ task.title }}
+      </h2>
+      <p class="mb-2">
+        Task Deadline: {{ task.end_datetime.strftime('%Y-%m-%d %H:%M') if
+        task.end_datetime else 'N/A' }}
+      </p>
+      <p class="mb-4">
+        Project Deadline: {{ task.project_end_datetime.strftime('%Y-%m-%d
+        %H:%M') if task.project_end_datetime else 'N/A' }}
+      </p>
+
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div class="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
+        {{ messages[0] }}
+      </div>
+      {% endif %} {% endwith %}
+
+      <h3 class="text-lg font-medium mb-2">Assigned Users:</h3>
+      {% if task.assigned_users %}
+      <ul class="mb-4">
+        {% for user in task.assigned_users.split(',') %}
+        <li>{{ user }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mb-4 text-gray-600">No users assigned.</p>
+      {% endif %}
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-4">
+        <div>
+          <label class="flex items-center text-sm font-medium text-blue-700">
+            <input type="checkbox" name="completed" class="mr-2 h-4 w-4
+            text-blue-600 focus:ring-blue-500 border-gray-300 rounded" {% if
+            task.progress == 100 %}checked{% endif %} /> Task Completed
+          </label>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Progress Description</label
+          >
+          <textarea
+            name="progress_text"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          >
+{{ task.progress_text if task.progress_text else '' }}</textarea
+          >
+          <p class="text-sm text-gray-600 mt-1">
+            Changes will be saved and visible to admin on the blockchain.
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Upload Files (Optional)</label
+          >
+          <input
+            type="file"
+            name="files"
+            multiple
+            accept="image/*,.pdf,.doc,.docx"
+            class="mt-1 block w-full p-2 border border-blue-300 rounded-md"
+          />
+          <p class="text-sm text-gray-600 mt-1">
+            Upload images, PDFs, or Word documents for payment/cost
+            verification.
+          </p>
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition"
+        >
+          Confirm
+        </button>
+      </form>
+      <button
+        class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded hover:bg-gray-700 transition mt-4"
+      >
+        <a
+          href="{{ url_for('user_dashboard') }}"
+          class="block text-white text-center"
+          >Back</a
+        >
+      </button>
+    </div>
+  </body>
+</html>

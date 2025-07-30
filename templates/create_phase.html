@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Create Phase</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-6">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h1 class="text-2xl font-bold mb-6 text-gray-800">Create Phase</h1>
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div
+        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+      >
+        {{ messages[0] }}
+      </div>
+      {% endif %} {% endwith %}
+      <form method="POST" class="space-y-4" id="phaseForm">
+        <div>
+          <label class="block text-sm font-medium text-blue-700">Name</label>
+          <input
+            type="text"
+            name="name"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Description</label
+          >
+          <textarea
+            name="description"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Start Date (YYYY-MM-DD HH:MM, Min: {{
+            project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
+          <input
+            type="datetime-local"
+            name="start_datetime"
+            id="phaseStartDate"
+            value="{{ request.form.start_datetime or project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            min="{{ project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >End Date (YYYY-MM-DD HH:MM, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
+          <input
+            type="datetime-local"
+            name="end_datetime"
+            id="phaseEndDate"
+            value="{{ request.form.end_datetime or project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition"
+        >
+          Create Phase
+        </button>
+      </form>
+      <button
+        class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded hover:bg-gray-700 transition mt-4"
+      >
+        <a
+          href="{{ url_for('admin_dashboard') }}"
+          class="block text-white text-center"
+        >
+          Back
+        </a>
+      </button>
+    </div>
+    <script>
+      const phaseForm = document.getElementById("phaseForm");
+      const phaseStartDate = document.getElementById("phaseStartDate");
+      const phaseEndDate = document.getElementById("phaseEndDate");
+
+      // Kiểm tra ngày của phase
+      phaseForm.addEventListener("submit", (event) => {
+        const projectStart =
+          "{{ project.start_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+        const projectEnd =
+          "{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+        const phaseStart = phaseStartDate.value;
+        const phaseEnd = phaseEndDate.value;
+        if (phaseStart < projectStart) {
+          event.preventDefault();
+          alert(
+            "Phase start date must be equal to or after project start date."
+          );
+        }
+        if (phaseEnd > projectEnd) {
+          event.preventDefault();
+          alert("Phase end date cannot exceed project end date.");
+        }
+      });
+    </script>
+  </body>
+</html>

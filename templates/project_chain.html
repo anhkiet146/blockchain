@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Blockchain for {{ project.name }}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .block-wrapper {
+        position: relative;
+        width: 800px; /* Độ rộng block */
+        z-index: 1; /* Block nằm trên đường nối */
+      }
+
+      .arrow {
+        position: absolute;
+        left: 50%;
+        bottom: -40px; /* Đặt đường nối dưới block */
+        transform: translateX(-50%);
+        z-index: -1; /* Đường nối nằm dưới block */
+        display: none; /* Ẩn mặc định */
+      }
+
+      .block-wrapper:not(:last-child) .arrow {
+        display: block; /* Hiển thị nếu không phải block cuối */
+      }
+
+      .arrow path {
+        stroke: #3b82f6; /* Màu xanh dương duy nhất */
+        fill: none;
+        stroke-width: 2;
+      }
+
+      .arrow .arrowhead {
+        fill: #3b82f6; /* Màu xanh dương cho mũi tên */
+      }
+
+      /* Header */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 30; /* Header nằm trên sidebar */
+      }
+
+      /* Sidebar cố định */
+      #sidebar {
+        position: fixed;
+        top: 60px; /* Bắt đầu dưới header (chiều cao header khoảng 64px) */
+        left: 0;
+        height: calc(100vh - 64px); /* Chiều cao trừ header */
+        width: 16rem; /* 256px, tương đương w-64 */
+        z-index: 20; /* Dưới header */
+      }
+
+      /* Đẩy nội dung chính sang phải */
+      .main-content {
+        margin-left: 16rem;
+      }
+
+      @media (max-width: 768px) {
+        .arrow {
+          display: none; /* Ẩn đường nối trên mobile */
+        }
+        .block-wrapper {
+          width: 100%; /* Block chiếm toàn bộ chiều rộng trên mobile */
+        }
+        #sidebar {
+          width: 100%;
+          height: auto;
+          top: 64px; /* Vẫn dưới header trên mobile */
+          z-index: 30; /* Trên nội dung chính khi hiển thị */
+        }
+        .main-content {
+          margin-left: 0;
+        }
+        .sidebar.hidden {
+          display: none;
+        }
+      }
+
+      /* Styles cho block bị chỉnh sửa */
+      .edited-block {
+        background-color: #ffcccc; /* Màu đỏ nhạt cho block bị chỉnh sửa */
+        border: 2px solid #ff0000;
+      }
+
+      .flash-message {
+        color: green;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <header
+      class="bg-white shadow p-4 flex justify-between items-center w-full z-10 fixed top-0"
+    >
+      <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+      <div>
+        {% if session.get('user_id') %}
+        <span class="mr-4 font-semibold"
+          >Xin Chào, {{ session['username'] }}</span
+        >
+        <a
+          href="{{ url_for('logout') }}"
+          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          >Đăng Xuất</a
+        >
+        {% else %}
+        <a
+          href="{{ url_for('login') }}"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >Đăng Nhập</a
+        >
+        {% endif %}
+      </div>
+      <button
+        id="sidebarToggleMobile"
+        class="text-gray-600 focus:outline-none md:hidden"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+    </header>
+    <div class="flex min-h-screen">
+      <!-- Sidebar -->
+      <div id="sidebar" class="sidebar bg-white shadow-lg z-20 w-64">
+        <div class="p-4 flex items-center justify-between border-b">
+          <h2 class="text-2xl font-semibold text-gray-800">Menu</h2>
+          <button
+            id="sidebarToggle"
+            class="text-gray-600 focus:outline-none md:hidden"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
+        <nav class="mt-6">
+          <a
+            href="{{ url_for('admin_dashboard') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">Dashboard</span>
+          </a>
+          <a
+            href="{{ url_for('admin_users') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Users</span>
+          </a>
+          <a
+            href="{{ url_for('view_chain') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">View Blockchain</span>
+          </a>
+          <a
+            href="{{ url_for('admin_notifications') }}"
+            class="flex items-center py-2 px-4 text-gray-700 hover:bg-gray-200"
+          >
+            <span class="sidebar-text">Notifications</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col main-content">
+        <main class="overflow-x-auto overflow-y-auto bg-gray-100 p-6 pt-20">
+          <div class="max-w-full mx-auto">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">
+              Blockchain for {{ project.name }}
+            </h1>
+
+            {% with messages = get_flashed_messages() %} {% if messages %} {%
+            for message in messages %}
+            <div
+              class="flash-message bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"
+              role="alert"
+            >
+              {{ message }}
+            </div>
+            {% endfor %} {% endif %} {% endwith %} {% if has_edits %}
+            <div
+              class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4"
+            >
+              Cảnh báo: Có nội dung bị chỉnh sửa trong blockchain.
+            </div>
+            {% endif %}
+
+            <div
+              id="blockchain-container"
+              class="flex flex-col items-center gap-y-12 relative"
+            >
+              {% for item in chain %}
+              <div class="block-wrapper" data-block-index="{{ loop.index0 }}">
+                <div
+                  class="p-4 rounded-lg shadow w-full break-words {% if loop.index0 % 3 == 0 %} bg-blue-100 {% elif loop.index0 % 3 == 1 %} bg-green-100 {% else %} bg-yellow-100 {% endif %} {% if item.is_edited %} edited-block {% endif %}"
+                >
+                  <h2 class="text-xl font-semibold text-gray-800">
+                    Block #{{ item.block.index }}
+                  </h2>
+                  <p class="text-gray-700">
+                    <strong>Hash:</strong> {{ item.block.hash }}
+                  </p>
+                  <p class="text-gray-700">
+                    <strong>Previous Hash:</strong> {{ item.block.prev_hash }}
+                  </p>
+                  <p class="text-gray-700">
+                    <strong>Timestamp:</strong> {{ item.block.timestamp }}
+                  </p>
+                  <h3 class="text-lg font-medium mt-2 text-gray-900">
+                    Transactions
+                  </h3>
+                  <ul class="list-disc pl-5 text-sm text-gray-800">
+                    {% for tx in item.block.transactions %} {% if tx.project_id
+                    == project.id %}
+                    <li>
+                      <strong>Task {{ tx.task_id }}:</strong> {{
+                      tx.progress_text }} ({{ tx.timestamp|default('N/A') }})
+                    </li>
+                    {% endif %} {% endfor %} {% if not item.block.transactions
+                    %}
+                    <li class="text-gray-400">No transactions in this block</li>
+                    {% endif %}
+                  </ul>
+                  {% if item.is_edited %}
+                  <form method="POST" class="mt-2">
+                    <input
+                      type="hidden"
+                      name="block_index"
+                      value="{{ loop.index0 }}"
+                    />
+                    <button
+                      type="submit"
+                      class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-sm"
+                    >
+                      Reset
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+                <!-- Đường thẳng và mũi tên tĩnh -->
+                <svg class="arrow" width="20" height="40" viewBox="0 0 20 40">
+                  <defs>
+                    <marker
+                      id="arrowhead"
+                      markerWidth="10"
+                      markerHeight="7"
+                      refX="8"
+                      refY="3.5"
+                      orient="auto"
+                    >
+                      <path class="arrowhead" d="M0,0 L0,7 L9,3.5 Z" />
+                    </marker>
+                  </defs>
+                  <path d="M10,0 L10,35" marker-end="url(#arrowhead)" />
+                </svg>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Sidebar Toggle JS -->
+    <script>
+      const sidebar = document.getElementById("sidebar");
+      const sidebarToggle = document.getElementById("sidebarToggle");
+      const sidebarToggleMobile = document.getElementById(
+        "sidebarToggleMobile"
+      );
+
+      const toggleSidebar = () => {
+        sidebar.classList.toggle("hidden");
+      };
+
+      if (sidebarToggle) sidebarToggle.addEventListener("click", toggleSidebar);
+      if (sidebarToggleMobile)
+        sidebarToggleMobile.addEventListener("click", toggleSidebar);
+    </script>
+  </body>
+</html>

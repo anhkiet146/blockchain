@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Create Task</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-6">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h1 class="text-2xl font-bold mb-6 text-gray-800">Create Task</h1>
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div
+        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+      >
+        {{ messages[0] }}
+      </div>
+      {% endif %} {% endwith %}
+      <form method="POST" class="space-y-4" id="taskForm">
+        <div>
+          <label class="block text-sm font-medium text-blue-700">Title</label>
+          <input
+            type="text"
+            name="title"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Description</label
+          >
+          <textarea
+            name="description"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >Start Date (YYYY-MM-DD HH:MM, Min: {{ now_str }}, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
+          <input
+            type="datetime-local"
+            name="start_datetime"
+            id="taskStartDate"
+            value="{{ request.form.start_datetime or now_str }}"
+            min="{{ now_str }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700"
+            >End Date (YYYY-MM-DD HH:MM, Max: {{
+            project.end_datetime.strftime('%Y-%m-%dT%H:%M') }})</label
+          >
+          <input
+            type="datetime-local"
+            name="end_datetime"
+            id="taskEndDate"
+            value="{{ request.form.end_datetime or now_str }}"
+            max="{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-700">Phase</label>
+          <select
+            name="phase_id"
+            id="phaseSelect"
+            class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+          >
+            <option value="">None</option>
+            {% for phase in phases %}
+            <option
+              value="{{ phase.id }}"
+              data-start="{{ phase.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+              data-end="{{ phase.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+            >
+              {{ phase.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <h2 class="text-lg font-medium text-blue-700">Assign Users</h2>
+          <div class="flex space-x-2">
+            <input
+              type="text"
+              id="userSearch"
+              list="userList"
+              placeholder="Search users by username"
+              class="mt-1 block border-blue-300 w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
+            />
+            <datalist id="userList">
+              {% for user in users %}
+              <option value="{{ user.username }}" data-id="{{ user.id }}">
+                {% endfor %}
+              </option>
+            </datalist>
+            <button
+              type="button"
+              id="addUser"
+              class="bg-blue-600 text-white font-semibold py-1 px-3 rounded hover:bg-blue-700 transition custom-button"
+            >
+              Add
+            </button>
+          </div>
+          <input type="hidden" name="user_ids" id="userIds" />
+          <div id="selectedUsers" class="mt-2 space-y-2"></div>
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition"
+        >
+          Create and Assign
+        </button>
+      </form>
+      <button
+        class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded hover:bg-gray-700 transition mt-4"
+      >
+        <a
+          href="{{ url_for('admin_dashboard') }}"
+          class="block text-white text-center"
+        >
+          Back
+        </a>
+      </button>
+    </div>
+    <script>
+      const userSearch = document.getElementById("userSearch");
+      const userList = document.getElementById("userList");
+      const addUserButton = document.getElementById("addUser");
+      const selectedUsersDiv = document.getElementById("selectedUsers");
+      const userIdsInput = document.getElementById("userIds");
+      const taskForm = document.getElementById("taskForm");
+      const taskStartDate = document.getElementById("taskStartDate");
+      const taskEndDate = document.getElementById("taskEndDate");
+      const phaseSelect = document.getElementById("phaseSelect");
+      let selectedUsers = [];
+
+      // Xử lý thêm user
+      addUserButton.addEventListener("click", () => {
+        const username = userSearch.value.trim();
+        const option = Array.from(userList.options).find(
+          (opt) => opt.value === username
+        );
+        if (option && !selectedUsers.includes(option.dataset.id)) {
+          selectedUsers.push(option.dataset.id);
+          const userDiv = document.createElement("div");
+          userDiv.className =
+            "flex justify-between items-center p-2 bg-gray-100 rounded";
+          userDiv.innerHTML = `
+            <span>${username}</span>
+            <button type="button" class="custom-button text-sm" onclick="removeUser('${option.dataset.id}', this)">Remove</button>
+          `;
+          selectedUsersDiv.appendChild(userDiv);
+          userIdsInput.value = selectedUsers.join(",");
+          userSearch.value = "";
+        }
+      });
+
+      function removeUser(userId, button) {
+        selectedUsers = selectedUsers.filter((id) => id !== userId);
+        button.parentElement.remove();
+        userIdsInput.value = selectedUsers.join(",");
+      }
+
+      // Kiểm tra ngày bắt đầu và kết thúc của task so với phase
+      taskForm.addEventListener("submit", (event) => {
+        const selectedPhase = phaseSelect.options[phaseSelect.selectedIndex];
+        const taskStartValue = taskStartDate.value;
+        const taskEndValue = taskEndDate.value;
+        if (
+          selectedPhase &&
+          selectedPhase.value !== "" &&
+          taskStartValue &&
+          taskEndValue
+        ) {
+          const phaseStart = selectedPhase.dataset.start;
+          const phaseEnd = selectedPhase.dataset.end;
+          if (taskStartValue < phaseStart || taskEndValue > phaseEnd) {
+            event.preventDefault();
+            alert("Task dates must be within the selected phase dates.");
+          }
+        } else if (taskStartValue > taskEndValue) {
+          event.preventDefault();
+          alert("Start date cannot be later than end date.");
+        }
+      });
+
+      // Cập nhật min và max của taskStartDate và taskEndDate khi chọn phase
+      phaseSelect.addEventListener("change", () => {
+        const selectedPhase = phaseSelect.options[phaseSelect.selectedIndex];
+        if (selectedPhase && selectedPhase.value !== "") {
+          taskStartDate.min = selectedPhase.dataset.start;
+          taskStartDate.max = selectedPhase.dataset.end;
+          taskEndDate.min = selectedPhase.dataset.start;
+          taskEndDate.max = selectedPhase.dataset.end;
+        } else {
+          taskStartDate.min = "{{ now_str }}";
+          taskStartDate.max =
+            "{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+          taskEndDate.min = "{{ now_str }}";
+          taskEndDate.max =
+            "{{ project.end_datetime.strftime('%Y-%m-%dT%H:%M') }}";
+        }
+        // Reset values if they fall outside new min/max
+        if (
+          taskStartDate.value < taskStartDate.min ||
+          taskStartDate.value > taskStartDate.max
+        ) {
+          taskStartDate.value = taskStartDate.min;
+        }
+        if (
+          taskEndDate.value < taskEndDate.min ||
+          taskEndDate.value > taskEndDate.max
+        ) {
+          taskEndDate.value = taskEndDate.min;
+        }
+      });
+    </script>
+  </body>
+</html>

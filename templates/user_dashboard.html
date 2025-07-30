@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>User Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="/static/styles.css" rel="stylesheet" />
+    <style>
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background-color: #4caf50;
+        text-align: right;
+        color: white;
+        padding-right: 5px;
+        transition: width 0.3s ease;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen p-6">
+    <header
+      class="bg-white shadow p-4 flex justify-between items-center w-full z-10"
+    >
+      <h1 class="text-xl font-bold text-gray-800">User Dashboard</h1>
+      <div>
+        {% if session.get('user_id') %}
+        <span class="mr-4 font-semibold"
+          >Xin Chào, {{ session['username'] }}</span
+        >
+        <a
+          href="{{ url_for('logout') }}"
+          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          >Đăng Xuất</a
+        >
+        {% else %}
+        <a
+          href="{{ url_for('login') }}"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >Đăng Nhập</a
+        >
+        {% endif %}
+      </div>
+      <button
+        id="sidebarToggleMobile"
+        class="text-gray-600 focus:outline-none md:hidden"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+    </header>
+    <div class="max-w-7xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">User Dashboard</h1>
+        <a href="{{ url_for('logout') }}" class="custom-link">Logout</a>
+      </div>
+      {% for project in projects %}
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-gray-700">
+          Project: {{ project.name }}
+        </h2>
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr>
+                <th class="p-2 border-b">Title</th>
+                <th class="p-2 border-b">Description</th>
+                <th class="p-2 border-b">Deadline</th>
+                <th class="p-2 border-b">Project Deadline</th>
+                <th class="p-2 border-b">Progress</th>
+                <th class="p-2 border-b">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if user_tasks[project.id] %} {% for task in
+              user_tasks[project.id] %}
+              <tr class="border-t">
+                <td class="p-2">{{ task.title }}</td>
+                <td class="p-2">{{ task.description }}</td>
+                <td class="p-2">{{ task.deadline }}</td>
+                <td class="p-2">{{ task.project_deadline }}</td>
+                <td class="p-2">
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      style="width: {{ task.progress|default(0) }}%"
+                    ></div>
+                  </div>
+                </td>
+                <td class="p-2">
+                  <a
+                    href="{{ url_for('update_progress', task_id=task.id) }}"
+                    class="custom-link"
+                    >Update Progress</a
+                  >
+                </td>
+              </tr>
+              {% endfor %} {% else %}
+              <tr class="border-t">
+                <td colspan="6" class="p-2 text-center text-gray-500">
+                  No tasks assigned for this project.
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endfor %} {% if not projects %}
+      <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+        No projects or tasks assigned.
+      </div>
+      {% endif %}
+    </div>
+  </body>
+</html>
